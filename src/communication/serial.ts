@@ -25,7 +25,7 @@ export class SerialLayer {
                 parity: 'none',
                 autoOpen: false,
             });
-            serial.on('data', data => data.next(data));
+            serial.on('data', b => data.next(b));
             serial.open(err => {
                 if (err) {
                     logger?.error(`serial.open: ${err.message}`);

@@ -1,5 +1,5 @@
 import { combineLatest, concat, defer, EMPTY, interval, merge, ReplaySubject } from 'rxjs';
-import { catchError, concatMap, finalize, first, map, retry, share, switchMap, tap, timeout } from 'rxjs/operators';
+import { catchError, concatMap, finalize, first, map, retry, share, startWith, switchMap, tap, timeout } from 'rxjs/operators';
 
 import { NodeInterface } from '..';
 import { logger } from '../log';
@@ -51,7 +51,7 @@ module.exports = function (RED: any) {
 
         const periodicPoll$ = combineLatest([
             amp$,
-            interval(timeSpan(1, 'min')),
+            interval(timeSpan(1, 'min')).pipe(startWith(0)),
         ]).pipe(
             concatMap(([a]) => {
                 const rx = state$.pipe(first());

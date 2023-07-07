@@ -1,0 +1,29 @@
+<script type="text/javascript">
+  RED.nodes.registerType("amp-node", {
+    category: "amp",
+    color: "#e6a4a5",
+    defaults: {
+      port: { value: "serial://COM7", required: true },
+      name: { value: "Amp" },
+    },
+    inputs: 1,
+    outputs: 1,
+    paletteLabel: "amp",
+    label: function () {
+      return this.name || "amp";
+    },
+  });
+</script>
+
+<script type="text/x-red" data-template-name="amp-node">
+  <div class="form-row">
+      <label for="node-input-port"><i class="fa fa-sort"></i> Port</label>
+      <input type="text" id="node-input-port">
+  </div>
+  <div class="form-row">
+      <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+      <input type="text" id="node-input-name">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="amp-node"></script>

@@ -1,0 +1,33 @@
+{
+  "name": "@andrei-tatar/node-red-contrib-amp",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "clean": "rm -rf build",
+    "build": "tsc && cp src/nodes/*.html dist/nodes/",
+    "pub": "npm run clean && npm run build && npm publish --registry https://registry.npmjs.org/ --access=public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andrei-tatar/node-red-contrib-amp.git"
+  },
+  "engines": {
+    "node": ">=12.19"
+  },
+  "author": "Andrei Tatar",
+  "license": "ISC",
+  "devDependencies": {
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.6"
+  },
+  "dependencies": {
+    "rxjs": "^7.8.1",
+    "serialport": "^11.0.0"
+  },
+  "node-red": {
+    "version": ">=1.0.0",
+    "nodes": {
+      "amp-node": "dist/nodes/amp-node.js"
+    }
+  }
+}

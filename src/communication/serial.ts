@@ -5,11 +5,9 @@ import { SerialPort } from 'serialport';
 import { Logger } from '../log';
 
 export class SerialLayer {
-    readonly data$ = this.data.asObservable();
-
     private constructor(
         private serial: SerialPort,
-        private data: Subject<Buffer>,
+        readonly data$: Observable<Buffer>,
     ) {
     }
 

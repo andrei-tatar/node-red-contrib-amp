@@ -1,5 +1,5 @@
 import { combineLatest, concat, defer, EMPTY, interval, merge, ReplaySubject } from 'rxjs';
-import { catchError, concatMap, finalize, first, map, retry, share, startWith, switchMap, tap, timeout } from 'rxjs/operators';
+import { catchError, concatMap, distinctUntilChanged, finalize, first, ignoreElements, map, retry, share, startWith, switchMap, tap, timeout } from 'rxjs/operators';
 
 import { NodeInterface } from '..';
 import { logger } from '../log';
@@ -19,19 +19,30 @@ module.exports = function (RED: any) {
         }
 
         const baudRate = parseInt(url.searchParams.get('baudRate') ?? '115200');
-        const amp$ = SerialLayer.connect(url.pathname, baudRate, logger)
-            .pipe(
-                tap(() => {
-                    this.status({ fill: 'green', shape: 'ring', text: 'connected' });
-                }),
-                map(s => new PackageLayer(s)),
-                map(p => new Amplifier(p)),
-                share({ connector: () => new ReplaySubject(1) }),
-            );
+        const amp$ = concat(
+            defer(() => {
+                this.status({ fill: 'yellow', shape: 'ring', text: 'connecting' });
+                return EMPTY;
+            }),
+            SerialLayer.connect(url.pathname, baudRate, logger)
+                .pipe(
+                    tap(() => {
+                        this.status({ fill: 'green', shape: 'ring', text: 'connected' });
+                    }),
+                    map(serial => new PackageLayer(serial)),
+                    map(pckg => new Amplifier(pckg)),
+                    share({ connector: () => new ReplaySubject(1) }),
+                )
+        ).pipe(
+            finalize(() => {
+                this.status({ fill: 'red', shape: 'ring', text: 'not connected' });
+            }),
+        );
 
-        const state$ = amp$.pipe(
-            switchMap(p => p.state$),
-            tap(s => this.send({ payload: s })),
+        const outputState$ = amp$.pipe(
+            switchMap(amp => amp.state$),
+            tap(state => this.send({ payload: state })),
+            ignoreElements(),
         );
 
         this.on('input', msg => {
@@ -43,7 +54,7 @@ module.exports = function (RED: any) {
                 first(),
                 switchMap(p => p.updateState(msg.payload)),
                 catchError(err => {
-                    this.error(`while sending to amp: ${err.message}`);
+                    this.error(`while sending ${JSON.stringify(msg.payload)} to amp: ${err.message}`);
                     return EMPTY;
                 }),
             ).subscribe();
@@ -54,31 +65,26 @@ module.exports = function (RED: any) {
             interval(timeSpan(1, 'min')).pipe(startWith(0)),
         ]).pipe(
             concatMap(([a]) => {
-                const rx = state$.pipe(first());
+                const rx = a.state$.pipe(first());
                 const tx = a.requestState();
 
                 return merge(rx, tx).pipe(
                     timeout(timeSpan(5, 'sec')),
                 );
-            })
+            }),
+            ignoreElements(),
         );
 
-        const status$ = concat(
-            defer(() => {
-                this.status({ fill: 'yellow', shape: 'ring', text: 'connecting' });
-                return EMPTY;
-            }),
-            state$.pipe(
-                tap((s) => {
-                    this.status({ fill: 'blue', shape: 'ring', text: `${s.on ? 'on' : 'off'} - ${s.volume}%` });
-                }),
-                finalize(() => {
-                    this.status({ fill: 'red', shape: 'ring', text: 'not connected' });
-                }),
-            ));
+        const status$ = amp$.pipe(
+            switchMap(amp => amp.state$),
+            map(state => `${state.on ? 'on' : 'off'} - ${state.volume}%`),
+            distinctUntilChanged(),
+            tap(status => this.status({ fill: 'blue', shape: 'ring', text: status })),
+            ignoreElements(),
+        );
 
         const subscription = combineLatest([
-            state$,
+            outputState$,
             periodicPoll$,
             status$,
         ]).pipe(

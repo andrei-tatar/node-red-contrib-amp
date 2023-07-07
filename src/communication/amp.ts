@@ -1,4 +1,4 @@
-import { concat, defer, filter, map } from "rxjs";
+import { concat, defer, filter, map, share } from "rxjs";
 import { PackageLayer } from "./package";
 
 export class Amplifier {
@@ -17,6 +17,7 @@ export class Amplifier {
             return null;
         }),
         filter(isDefined),
+        share(),
     );
 
     requestState() {

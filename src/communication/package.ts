@@ -40,7 +40,7 @@ export class PackageLayer {
             } as State),
             map(v => v.received),
             filter(Buffer.isBuffer),
-            share()
+            share(),
         );
 
     constructor(

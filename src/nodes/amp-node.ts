@@ -31,12 +31,12 @@ module.exports = function (RED: any) {
                     }),
                     map(serial => new PackageLayer(serial)),
                     map(pckg => new Amplifier(pckg)),
-                    share({ connector: () => new ReplaySubject(1) }),
                 )
         ).pipe(
             finalize(() => {
                 this.status({ fill: 'red', shape: 'ring', text: 'not connected' });
             }),
+            share({ connector: () => new ReplaySubject(1) }),
         );
 
         const outputState$ = amp$.pipe(
